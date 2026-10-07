@@ -1,46 +1,39 @@
-name: Build and Deploy to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches:
-      - main # Change this to your default branch if it's not 'main'
+      - main
+      - master
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
   deploy:
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject Supabase Secrets
-        env:
-          SB_URL: ${{ secrets.SUPABASE_URL }}
-          SB_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: |
-          node -e "
-            const fs = require('fs');
-            let content = fs.readFileSync('script.js', 'utf8');
-            content = content.replace('---YOUR_SUPABASE_URL_HERE---', process.env.SB_URL);
-            content = content.replace('---YOUR_SUPABASE_ANON_KEY_HERE---', process.env.SB_KEY);
-            fs.writeFileSync('script.js', content);
-          "
-          echo "Injection completed using Node.js"
-
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
 
-      - name: Upload artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: ./
 
       - name: Deploy to GitHub Pages
         id: deployment
